@@ -54,6 +54,17 @@ public class CategoryService {
         return toResponseDto(categoryRepository.save(category.get()));
     }
 
+    public CategoryDto delete(@PathVariable Long id) {
+        Optional<Category> category = categoryRepository.findById(id);
+        if (category.isEmpty()) {
+            throw new ResourceNotFoundException("Category not found");
+        }
+
+        categoryRepository.deleteById(id);
+
+        return toResponseDto(category.get());
+    }
+
     public CategoryDto getById(Long id) {
         return toResponseDto(categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found")));
     }

@@ -38,4 +38,9 @@ public class CategoryController {
     public ApiResponse<CategoryDto> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
         return ApiResponse.ok(categoryService.update(id, request));
     }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<CategoryDto> deleteCategory(@PathVariable Long id) {
+        return ApiResponse.ok(categoryService.delete(id));
+    }
 }
