@@ -1,0 +1,16 @@
+# Postgres cuc bo de dev. Chay: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: minishop-postgres
+    environment:
+      POSTGRES_DB: minishop
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Twub.0712
+    ports:
+      - "5432:5432"
+    volumes:
+      - minishop_pgdata:/var/lib/postgresql/data
+
+volumes:
+  minishop_pgdata:
