@@ -5,7 +5,6 @@ import dev.dada.minishop.category.dto.CategoryRequest;
 import dev.dada.minishop.exception.BusinessException;
 import dev.dada.minishop.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +37,7 @@ public class CategoryService {
         return toResponseDto(categoryRepository.save(category));
     }
 
-    public CategoryDto update(@PathVariable Long id, CategoryRequest request) {
+    public CategoryDto update(Long id, CategoryRequest request) {
         Optional<Category> category = categoryRepository.findById(id);
         if (category.isEmpty()) {
             throw new ResourceNotFoundException("Category not found");
@@ -54,7 +53,7 @@ public class CategoryService {
         return toResponseDto(categoryRepository.save(category.get()));
     }
 
-    public CategoryDto delete(@PathVariable Long id) {
+    public CategoryDto delete(Long id) {
         Optional<Category> category = categoryRepository.findById(id);
         if (category.isEmpty()) {
             throw new ResourceNotFoundException("Category not found");

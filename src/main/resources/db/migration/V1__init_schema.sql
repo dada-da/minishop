@@ -31,10 +31,12 @@ CREATE TABLE products
 (
     id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name           VARCHAR(250)   NOT NULL,
+    description    TEXT,
     price          NUMERIC(12, 0) NOT NULL,
     original_price NUMERIC(12, 0),
-    quantity       INTEGER                 DEFAULT 0,
+    stock_quantity INTEGER                 DEFAULT 0,
     version        BIGINT         NOT NULL DEFAULT 1,
+    category_id    BIGINT,
     created_at     TIMESTAMPTZ             DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMPTZ
 );

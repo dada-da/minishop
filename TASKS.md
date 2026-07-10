@@ -44,7 +44,7 @@ Quy ước estimate: ◔ ≈ 1-2h · ◑ ≈ nửa ngày · ◕ ≈ 1 ngày · �
 - Phụ thuộc: MS-04
 
 ### MS-07 · CRUD Product API + DTO/MapStruct  ◕
-- Mapper Product↔DTO; validation trên `CreateProductRequest`.
+- Mapper Product↔DTO; validation trên `ProductRequest`.
 - **AC:** tạo product với input sai (giá âm) bị 400; output luôn là DTO.
 - Phụ thuộc: MS-06
 
