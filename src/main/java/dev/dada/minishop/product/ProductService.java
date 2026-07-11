@@ -26,15 +26,19 @@ public class ProductService {
     }
 
     public ProductDto addProduct(ProductRequest request) {
-        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new BusinessException("Category not found"));
-
         Product product = new Product();
+
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new BusinessException("Category not found"));
+
+            product.setCategory(category);
+        }
 
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
-        product.setCategory(category);
+
         product.setOriginalPrice(request.getOriginalPrice());
 
         return toResponseDto(productRepository.save(product));
@@ -78,6 +82,6 @@ public class ProductService {
     }
 
     private ProductDto toResponseDto(Product product) {
-        return new ProductDto(product.getId(), product.getName(), product.getDescription(), product.getPrice(),product.getOriginalPrice(), product.getStockQuantity(), product.getCategory().getId());
+        return new ProductDto(product.getId(), product.getName(), product.getDescription(), product.getPrice(),product.getOriginalPrice(), product.getStockQuantity(), product.getCategory() != null ? product.getCategory().getId() : null);
     }
 }
