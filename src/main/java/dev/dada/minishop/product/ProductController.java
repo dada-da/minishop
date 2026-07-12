@@ -27,7 +27,7 @@ public class ProductController {
         return ApiResponse.ok(productService.addProduct(product));
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public ApiResponse<List<ProductDto>> getAll() {
         return ApiResponse.ok(productService.getAll());
     }

@@ -19,7 +19,7 @@ public class CategoryController {
     }
     // TODO MS-05
 
-    @GetMapping("/all")
+    @GetMapping
     public ApiResponse<List<CategoryDto>> getAllCategories() {
         return ApiResponse.ok(categoryService.getAll());
     }
