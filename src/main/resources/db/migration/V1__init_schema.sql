@@ -7,9 +7,9 @@
 CREATE TABLE users
 (
     id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    username      VARCHAR(50) NOT NULL,
+    username      VARCHAR(50),
     full_name     VARCHAR(100),
-    email         VARCHAR(100),
+    email         VARCHAR(100) NOT NULL,
     password_hash TEXT,
     role          VARCHAR(50) NOT NULL DEFAULT 'USER',
     active        BOOLEAN              DEFAULT TRUE,

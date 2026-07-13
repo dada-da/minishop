@@ -5,5 +5,10 @@ package dev.dada.minishop.user;
  */
 public enum Role {
     CUSTOMER,
-    ADMIN
+    ADMIN;
+
+    public String getAuthorityName() {
+        return "ROLE_" + name();
+    }
 }
+
