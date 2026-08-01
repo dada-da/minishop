@@ -1,4 +1,7 @@
 package dev.dada.minishop.cart.dto;
 
-public record AddToCartRequest(Long productId, Integer quantity) {
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
+public record AddToCartRequest(@NotNull Long productId, @Positive Integer quantity) {
 }
