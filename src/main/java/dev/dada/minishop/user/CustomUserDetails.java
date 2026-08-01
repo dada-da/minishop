@@ -33,4 +33,8 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return user.getActive();
     }
+
+    public Long getUserId() {
+        return user.getId();
+    }
 }
