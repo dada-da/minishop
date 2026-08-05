@@ -2,6 +2,8 @@ package dev.dada.minishop.order;
 
 import dev.dada.minishop.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -11,6 +13,8 @@ import java.util.List;
  * Luu y: OrderItem phai snapshot price tai thoi diem dat (gia product co the doi sau).
  */
 @Entity
+@Getter
+@Setter
 @Table(name = "orders")
 public class Order extends BaseEntity {
     // TODO MS-17
@@ -25,9 +29,9 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrderItem> orderItems;
 
-    @Column(name = "total_Amount", nullable = false)
+    @Column(name = "price", nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(name = "address", nullable = false)
-    private String address;
+    @Column(name = "original_price")
+    private BigDecimal originalTotalAmount;
 }
