@@ -11,9 +11,9 @@ CREATE TABLE users
     full_name     VARCHAR(100),
     email         VARCHAR(100) NOT NULL,
     password_hash TEXT,
-    role          VARCHAR(50) NOT NULL DEFAULT 'USER',
-    active        BOOLEAN              DEFAULT TRUE,
-    created_at    TIMESTAMPTZ          DEFAULT CURRENT_TIMESTAMP,
+    role          VARCHAR(50)  NOT NULL DEFAULT 'USER',
+    active        BOOLEAN               DEFAULT TRUE,
+    created_at    TIMESTAMPTZ           DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMPTZ
 );
 
@@ -61,13 +61,13 @@ CREATE TABLE cart_items
 
 CREATE TABLE orders
 (
-    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id        BIGINT references users (id) NOT NULL,
-    status         VARCHAR(30) DEFAULT 'PENDING',
-    price          NUMERIC(12, 0)               NOT NULL,
-    original_price NUMERIC(12, 0),
-    created_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at     TIMESTAMPTZ
+    id                    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id               BIGINT references users (id) NOT NULL,
+    status                VARCHAR(30) DEFAULT 'PENDING',
+    total_amount          NUMERIC(12, 0)               NOT NULL,
+    total_original_amount NUMERIC(12, 0),
+    created_at            TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMPTZ
 );
 
 CREATE TABLE order_items
@@ -75,6 +75,7 @@ CREATE TABLE order_items
     id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     order_id       BIGINT references orders (id)   NOT NULL,
     product_id     BIGINT references products (id) NOT NULL,
+    product_name   VARCHAR(250)                    NOT NULL,
     quantity       INTEGER                         NOT NULL,
     price          NUMERIC(12, 0)                  NOT NULL,
     original_price NUMERIC(12, 0),

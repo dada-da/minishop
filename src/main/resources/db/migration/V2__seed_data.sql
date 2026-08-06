@@ -1,5 +1,6 @@
 INSERT INTO users(email, username, role, password_hash)
-VALUES ('admin@mail.com', 'admin', 'ADMIN', '$2a$10$akn5QXa9xX/GPHcyOHijPuLea4J7WiJZXgXkAXYwcQlIvLZn6P3Ie');
+VALUES ('admin@mail.com', 'admin', 'ADMIN', '$2a$10$akn5QXa9xX/GPHcyOHijPuLea4J7WiJZXgXkAXYwcQlIvLZn6P3Ie'),
+       ('user@mail.com', 'user', 'CUSTOMER', '$2a$10$akn5QXa9xX/GPHcyOHijPuLea4J7WiJZXgXkAXYwcQlIvLZn6P3Ie');
 
 INSERT INTO categories(name, slug)
 VALUES ('Phone', 'Phone'),

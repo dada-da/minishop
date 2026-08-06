@@ -6,6 +6,8 @@ import dev.dada.minishop.order.dto.ChangeStatusRequest;
 import dev.dada.minishop.order.dto.OrderDto;
 import dev.dada.minishop.user.CustomUserDetails;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,10 +28,9 @@ public class OrderController {
     }
 
     @PostMapping
-    public ApiResponse<Void> placeOrder(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        orderService.placeOrder(userDetails.getUserId());
-
-        return ApiResponse.ok();
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<OrderDto> placeOrder(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ApiResponse.ok(orderService.placeOrder(userDetails.getUserId()));
     }
 
     @GetMapping
@@ -47,7 +48,8 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public ApiResponse<OrderDto> changeOrderStatus(@PathVariable Long id, @Valid @RequestBody ChangeStatusRequest request) {
-        return ApiResponse.ok(orderService.changeOrderStatus(id, request));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<OrderDto> changeOrderStatus(@PathVariable Long id, @Valid @RequestBody ChangeStatusRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ApiResponse.ok(orderService.changeOrderStatus(id, request, userDetails.getUserId()));
     }
 }

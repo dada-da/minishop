@@ -9,8 +9,6 @@ import dev.dada.minishop.order.dto.ChangeStatusRequest;
 import dev.dada.minishop.order.dto.OrderDto;
 import dev.dada.minishop.order.dto.OrderItemDto;
 import dev.dada.minishop.product.Product;
-import dev.dada.minishop.product.ProductRepository;
-import dev.dada.minishop.user.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,11 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * ===== TRAI TIM CUA PROJECT - TASK MS-18 + MS-21 =====
@@ -43,16 +37,14 @@ import java.util.stream.Collectors;
 public class OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
-    private final ProductRepository productRepository;
 
-    public OrderService(OrderRepository orderRepository, CartRepository cartRepository, ProductRepository productRepository) {
+    public OrderService(OrderRepository orderRepository, CartRepository cartRepository) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
-        this.productRepository = productRepository;
     }
 
     @Transactional
-    public void placeOrder(Long userId) {
+    public OrderDto placeOrder(Long userId) {
         // TODO MS-18, MS-21
         Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new BusinessException("Can not find cart with user"));
 
@@ -67,7 +59,7 @@ public class OrderService {
         ArrayList<OrderItem> orderItems = new ArrayList<>();
 
         for (CartItem cartItem : cart.getCartItems()) {
-            Product product = productRepository.findById(cartItem.getProduct().getId()).orElseThrow(() -> new BusinessException("Product not found"));
+            Product product = cartItem.getProduct();
 
             if (product.getStockQuantity() < cartItem.getQuantity()) {
                 throw new BusinessException("Product stock quantity exceeded");
@@ -77,7 +69,8 @@ public class OrderService {
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
-            orderItem.setProduct(product);
+            orderItem.setProductName(product.getName());
+            orderItem.setProductId(product.getId());
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setUnitOriginalPrice(cartItem.getProduct().getOriginalPrice());
             orderItem.setUnitPrice(cartItem.getProduct().getPrice());
@@ -90,17 +83,23 @@ public class OrderService {
         }
 
         order.setTotalAmount(totalPrice);
-        order.setOriginalTotalAmount(totalOriginal.equals(BigDecimal.ZERO) ? null : totalOriginal);
+        order.setOriginalTotalAmount(totalOriginal.compareTo(BigDecimal.ZERO) == 0 ? null : totalOriginal);
         order.setOrderStatus(OrderStatus.PENDING);
         order.setOrderItems(orderItems);
 
         orderRepository.save(order);
         List<CartItem> cartItems = cart.getCartItems();
         cartItems.clear();
+
+        return toResponseDto(order);
     }
 
     @Transactional
     public PageResponse<OrderDto> getOrders(int page, int size, String sortBy, String direction, Long userId) {
+        if (!Set.of("id", "createdAt", "updatedAt").contains(sortBy)) {
+            sortBy =  "createdAt";
+        }
+
         Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -110,7 +109,7 @@ public class OrderService {
         List<OrderDto> orders = new ArrayList<>();
 
         for (Order order : orderPage.getContent()) {
-            OrderDto orderDto = toResponseDto(order, order.getOrderItems());
+            OrderDto orderDto = toResponseDto(order);
             orders.add(orderDto);
         }
 
@@ -119,41 +118,35 @@ public class OrderService {
 
     @Transactional
     public OrderDto getOrderById(Long orderId, Long userId) {
-        Optional<Order> order = orderRepository.findById(orderId);
+        Optional<Order> order = orderRepository.findByIdAndUserId(orderId, userId);
 
         if (order.isEmpty()) {
-            throw new BusinessException("Order not found");
-        }
-
-        if (!Objects.equals(order.get().getUserId(), userId)) {
             throw new BusinessException("User not authorized");
         }
 
-        return toResponseDto(order.get(), order.get().getOrderItems());
+        return toResponseDto(order.get());
     }
 
     @Transactional
-    public OrderDto changeOrderStatus(Long orderId, ChangeStatusRequest request) {
+    public OrderDto changeOrderStatus(Long orderId, ChangeStatusRequest request, Long userId) {
         Optional<Order> order = orderRepository.findById(orderId);
 
         if (order.isEmpty()) {
             throw new BusinessException("Order not found");
         }
 
-        OrderStatus newStatus = OrderStatus.valueOf(request.status());
+        order.get().setOrderStatus(request.status());
 
-        order.get().setOrderStatus(newStatus);
-
-        return toResponseDto(order.get(), order.get().getOrderItems());
+        return toResponseDto(order.get());
     }
 
-    private OrderDto toResponseDto(Order order, List<OrderItem> orderItems) {
-        List<OrderItemDto> orderItemDtoList = orderItems.stream().map(this::toResponseDto).toList();
+    private OrderDto toResponseDto(Order order) {
+        List<OrderItemDto> orderItemDtoList = order.getOrderItems().stream().map(this::toResponseDto).toList();
 
         return new OrderDto(order.getId(), order.getOrderStatus().toString(), order.getTotalAmount(), order.getOriginalTotalAmount(), orderItemDtoList);
     }
 
     private OrderItemDto toResponseDto(OrderItem orderItem) {
-        return new OrderItemDto(orderItem.getProduct().getId(), orderItem.getProduct().getName(), orderItem.getQuantity(), orderItem.getUnitPrice(), orderItem.getUnitOriginalPrice());
+        return new OrderItemDto(orderItem.getProductId(), orderItem.getProductName(), orderItem.getQuantity(), orderItem.getUnitPrice(), orderItem.getUnitOriginalPrice());
     }
 }

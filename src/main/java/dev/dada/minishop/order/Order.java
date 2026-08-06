@@ -29,9 +29,9 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrderItem> orderItems;
 
-    @Column(name = "price", nullable = false)
+    @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(name = "original_price")
+    @Column(name = "total_original_amount")
     private BigDecimal originalTotalAmount;
 }
