@@ -1,14 +1,12 @@
 package dev.dada.minishop.order;
 
 import dev.dada.minishop.common.BaseEntity;
-import dev.dada.minishop.product.Product;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 /**
  * TASK MS-17: OrderItem (order, productId, productName snapshot, unitPrice snapshot, quantity).

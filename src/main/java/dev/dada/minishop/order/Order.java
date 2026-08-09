@@ -2,10 +2,12 @@ package dev.dada.minishop.order;
 
 import dev.dada.minishop.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,11 +29,22 @@ public class Order extends BaseEntity {
     private OrderStatus orderStatus;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<OrderItem> orderItems;
+    @Setter(AccessLevel.NONE)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
     @Column(name = "total_original_amount")
     private BigDecimal originalTotalAmount;
+
+    public void addItem(OrderItem item) {
+        orderItems.add(item);
+        item.setOrder(this);
+    }
+
+    public void removeItem(OrderItem item) {
+        orderItems.remove(item);
+        item.setOrder(null);
+    }
 }

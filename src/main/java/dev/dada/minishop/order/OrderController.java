@@ -6,12 +6,13 @@ import dev.dada.minishop.order.dto.ChangeStatusRequest;
 import dev.dada.minishop.order.dto.OrderDto;
 import dev.dada.minishop.user.CustomUserDetails;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * TASK MS-19: POST /api/orders (checkout), GET /api/orders (lich su cua user),
@@ -19,6 +20,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/orders")
+@Validated
 public class OrderController {
     // TODO MS-19
     private final OrderService orderService;
@@ -34,8 +36,8 @@ public class OrderController {
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<OrderDto>> getOrders(@RequestParam(defaultValue = "0") int page,
-                                                         @RequestParam(defaultValue = "10") int size,
+    public ApiResponse<PageResponse<OrderDto>> getOrders(@RequestParam(defaultValue = "0") @Min(0) int page,
+                                                         @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
                                                          @RequestParam(defaultValue = "id") String sortBy,
                                                          @RequestParam(defaultValue = "asc") String direction,
                                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -49,7 +51,7 @@ public class OrderController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<OrderDto> changeOrderStatus(@PathVariable Long id, @Valid @RequestBody ChangeStatusRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return ApiResponse.ok(orderService.changeOrderStatus(id, request, userDetails.getUserId()));
+    public ApiResponse<OrderDto> changeOrderStatus(@PathVariable Long id, @Valid @RequestBody ChangeStatusRequest request) {
+        return ApiResponse.ok(orderService.changeOrderStatus(id, request));
     }
 }
