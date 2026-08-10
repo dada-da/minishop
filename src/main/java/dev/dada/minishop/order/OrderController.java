@@ -54,4 +54,9 @@ public class OrderController {
     public ApiResponse<OrderDto> changeOrderStatus(@PathVariable Long id, @Valid @RequestBody ChangeStatusRequest request) {
         return ApiResponse.ok(orderService.changeOrderStatus(id, request));
     }
+
+    @PatchMapping("/{id}/cancel")
+    public ApiResponse<OrderDto> cancelOrder(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ApiResponse.ok(orderService.cancelOrder(id, userDetails.getUserId()));
+    }
 }

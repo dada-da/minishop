@@ -31,7 +31,6 @@ import java.util.Set;
  * 3. Tao Order + OrderItem (snapshot gia)
  * 4. Tao Payment (PENDING)
  * 5. Xoa cart
- * => TAT CA trong 1 @Transactional. Payment fail -> rollback tru kho.
  * <p>
  * MS-21 (concurrency): khi tru kho, @Version tren Product gay
  * OptimisticLockException neu 2 nguoi mua cung luc -> bat va bao "het hang/thu lai".
@@ -87,7 +86,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PageResponse<OrderDto> getOrders(int page, int size, String sortBy, String direction, Long userId) {
         if (!Set.of("id", "createdAt", "updatedAt").contains(sortBy)) {
-            sortBy =  "id";
+            sortBy = "id";
         }
 
         Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
@@ -132,6 +131,28 @@ public class OrderService {
 
                 product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
             }
+        }
+
+        return toResponseDto(order);
+    }
+
+    @Transactional
+    public OrderDto cancelOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+
+        OrderStatus status = order.getOrderStatus();
+
+        if (!status.canTransitionTo(OrderStatus.CANCELLED)) {
+            throw new BusinessException("Cannot cancel order");
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        List<OrderItem> orderItems = order.getOrderItems();
+        for (OrderItem orderItem : orderItems) {
+            Product product = productRepository.findById(orderItem.getProductId()).orElseThrow(() -> new BusinessException("Product not found"));
+
+            product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
         }
 
         return toResponseDto(order);

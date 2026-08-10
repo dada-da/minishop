@@ -85,10 +85,14 @@ CREATE TABLE order_items
 
 CREATE TABLE payments
 (
-    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id   BIGINT references orders (id) NOT NULL,
-    user_id    BIGINT references users (id)  NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id        BIGINT references orders (id) NOT NULL,
+    transaction_id  VARCHAR(250),
+    status          VARCHAR(30) DEFAULT 'PENDING',
+    amount          NUMERIC(12, 0)                NOT NULL,
+    idempotency_key VARCHAR(43)                   NOT NULL UNIQUE,
+    method          VARCHAR(30),
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ
 );
 
