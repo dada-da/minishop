@@ -4,6 +4,7 @@ import dev.dada.minishop.checkout.dto.CheckoutRequest;
 import dev.dada.minishop.common.ApiResponse;
 import dev.dada.minishop.payment.dto.PaymentDto;
 import dev.dada.minishop.user.CustomUserDetails;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +21,7 @@ public class CheckoutController {
     }
 
     @PostMapping
-    public ApiResponse<PaymentDto> checkout(@RequestBody final CheckoutRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ApiResponse<PaymentDto> checkout(@Valid @RequestBody CheckoutRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ApiResponse.ok(checkoutService.checkout(request, userDetails.getUserId()));
     }
 }

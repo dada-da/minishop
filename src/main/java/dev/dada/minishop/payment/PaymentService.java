@@ -4,40 +4,53 @@ import dev.dada.minishop.exception.BusinessException;
 import dev.dada.minishop.order.Order;
 import dev.dada.minishop.order.OrderRepository;
 import dev.dada.minishop.payment.dto.PaymentDto;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class PaymentService {
-    // TODO MS-20
     private final PaymentRepository paymentRepository;
-    private final OrderRepository orderRepository;
 
-    public PaymentService(PaymentRepository paymentRepository, OrderRepository orderRepository) {
-
+    public PaymentService(PaymentRepository paymentRepository) {
         this.paymentRepository = paymentRepository;
-        this.orderRepository = orderRepository;
     }
 
     @Transactional
-    public void createPending(Long orderId, BigDecimal amount, String key, String method) {
+    public Payment createPending(Long orderId, String key, String method, BigDecimal amount) {
+        Optional<Payment> payment = paymentRepository.findByIdempotencyKey(key);
+
+        if (payment.isPresent()) {
+            if (Objects.equals(payment.get().getIdempotencyKey(), key) && !orderId.equals(payment.get().getOrderId())) {
+                throw new BusinessException("Order has already been paid");
+            }
+
+            return payment.get();
+        }
+
         Payment newPayment = new Payment();
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new BusinessException("Order Not Found"));
 
         newPayment.setAmount(amount);
         newPayment.setIdempotencyKey(key);
         newPayment.setStatus(PaymentStatus.PENDING);
         newPayment.setMethod(method);
-        newPayment.setOrder(order);
+        newPayment.setOrderId(orderId);
 
-        paymentRepository.save(newPayment);
+        try {
+            return paymentRepository.save(newPayment);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessException("Order has already been pending");
+        }
     }
 
     @Transactional
-    public Payment updatePending(String key, String transactionId,boolean success) {
+    public Payment updatePending(String key, String transactionId, boolean success) {
         Payment payment = paymentRepository.findByIdempotencyKey(key).orElseThrow(() -> new BusinessException("Payment Not Found"));
+
         payment.setTransactionId(transactionId);
 
         if (success) {
@@ -46,10 +59,19 @@ public class PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
         }
 
-        return paymentRepository.save(payment);
+        return payment;
     }
 
-    public PaymentDto toResponseDto(Payment payment) {
-        return new PaymentDto(payment.getId(), payment.getStatus(), payment.getAmount());
+    public PaymentDto toResponseDto(Payment payment, String message) {
+        return new PaymentDto(payment.getId(), payment.getStatus(), payment.getAmount(), message);
+    }
+
+    @Transactional
+    public Payment markUnknown(String key) {
+        Payment payment = paymentRepository.findByIdempotencyKey(key).orElseThrow(() -> new BusinessException("Payment Not Found"));
+
+        payment.setStatus(PaymentStatus.UNKNOWN);
+
+        return payment;
     }
 }

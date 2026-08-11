@@ -112,6 +112,11 @@ public class OrderService {
         return toResponseDto(order);
     }
 
+    @Transactional(readOnly = true)
+    public Order getOrderEntityById(Long orderId, Long userId) {
+        return orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+    }
+
     @Transactional
     public OrderDto changeOrderStatus(Long orderId, ChangeStatusRequest request) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new BusinessException("Order not found"));
@@ -125,12 +130,7 @@ public class OrderService {
         order.setOrderStatus(request.status());
 
         if (request.status().equals(OrderStatus.CANCELLED)) {
-            List<OrderItem> orderItems = order.getOrderItems();
-            for (OrderItem orderItem : orderItems) {
-                Product product = productRepository.findById(orderItem.getProductId()).orElseThrow(() -> new BusinessException("Product not found"));
-
-                product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
-            }
+            restoreStock(order);
         }
 
         return toResponseDto(order);
@@ -148,12 +148,22 @@ public class OrderService {
 
         order.setOrderStatus(OrderStatus.CANCELLED);
 
-        List<OrderItem> orderItems = order.getOrderItems();
-        for (OrderItem orderItem : orderItems) {
-            Product product = productRepository.findById(orderItem.getProductId()).orElseThrow(() -> new BusinessException("Product not found"));
+        restoreStock(order);
 
-            product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
+        return toResponseDto(order);
+    }
+
+    @Transactional
+    public OrderDto markPaid(Long orderId, Long userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+
+        OrderStatus status = order.getOrderStatus();
+
+        if (!status.canTransitionTo(OrderStatus.PAID)) {
+            throw new BusinessException("Cannot mark paid order");
         }
+
+        order.setOrderStatus(OrderStatus.PAID);
 
         return toResponseDto(order);
     }
@@ -186,5 +196,14 @@ public class OrderService {
         orderItem.setUnitPrice(cartItem.getProduct().getPrice());
 
         return orderItem;
+    }
+
+    private void restoreStock(Order order) {
+        List<OrderItem> orderItems = order.getOrderItems();
+        for (OrderItem orderItem : orderItems) {
+            Product product = productRepository.findById(orderItem.getProductId()).orElseThrow(() -> new BusinessException("Product not found"));
+
+            product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
+        }
     }
 }

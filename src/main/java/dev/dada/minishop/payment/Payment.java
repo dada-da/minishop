@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 /**
- * TASK MS-20: Payment (order @OneToOne, amount, status, method). Mock - khong tich hop cong that.
+ * TASK MS-20: Payment (amount, status, method). Mock - khong tich hop cong that.
  */
 @Entity
 @Getter
@@ -17,9 +17,8 @@ import java.math.BigDecimal;
 @Table(name = "payments")
 public class Payment extends BaseEntity {
     // TODO MS-20
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @Column(name = "order_id", nullable = false)
+    private Long orderId;
 
     @Column(name = "amount")
     private BigDecimal amount;
