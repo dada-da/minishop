@@ -1,6 +1,6 @@
 package dev.dada.minishop.common;
 
-import java.time.Instant;
+import dev.dada.minishop.exception.ErrorResponse;
 
 /**
  * TASK MS-03: Wrapper response chung { success, message, data }.
@@ -16,7 +16,7 @@ public record ApiResponse<T>(boolean success, String message, T data) {
         return new ApiResponse<>(true, null, null);
     }
 
-    public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null);
+    public static ApiResponse<ErrorResponse> error(ErrorResponse errorResponse) {
+        return new ApiResponse<>(false, null, errorResponse);
     }
 }
