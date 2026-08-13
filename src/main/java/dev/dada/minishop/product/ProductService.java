@@ -2,7 +2,7 @@ package dev.dada.minishop.product;
 
 import dev.dada.minishop.category.Category;
 import dev.dada.minishop.category.CategoryRepository;
-import dev.dada.minishop.exception.BusinessException;
+import dev.dada.minishop.exception.ResourceNotFoundException;
 import dev.dada.minishop.product.dto.ProductRequest;
 import dev.dada.minishop.product.dto.ProductDto;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class ProductService {
         Product product = new Product();
 
         if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new BusinessException("Category not found"));
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
             product.setCategory(category);
         }
@@ -47,9 +47,9 @@ public class ProductService {
     public ProductDto updateProduct(Long id, ProductRequest request) {
         Optional<Product> optionalProduct = productRepository.findById(id);
 
-        Product product = optionalProduct.orElseThrow(() -> new BusinessException("Product not found"));
+        Product product = optionalProduct.orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new BusinessException("Category not found"));
+        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -66,14 +66,14 @@ public class ProductService {
     }
 
     public ProductDto getById(Long id) {
-        return toResponseDto(productRepository.findById(id).orElseThrow(() -> new BusinessException("Product not found")));
+        return toResponseDto(productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found")));
     }
 
     public ProductDto deleteById(Long id) {
         Optional<Product> product = productRepository.findById(id);
 
         if (product.isEmpty()) {
-            throw new BusinessException("Product not found");
+            throw new ResourceNotFoundException("Product not found");
         }
 
         productRepository.deleteById(id);

@@ -1,6 +1,6 @@
 package dev.dada.minishop.user;
 
-import dev.dada.minishop.exception.BusinessException;
+import dev.dada.minishop.exception.DuplicateResourceException;
 import dev.dada.minishop.security.JwtService;
 import dev.dada.minishop.user.dto.AuthResponse;
 import dev.dada.minishop.user.dto.LoginRequest;
@@ -33,7 +33,7 @@ public class AuthService {
     @Transactional
     public void register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.email())) {
-            throw new BusinessException("Email already exists");
+            throw new DuplicateResourceException("Email already exists");
         }
 
         User user = new User();

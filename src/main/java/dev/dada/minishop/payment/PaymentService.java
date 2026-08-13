@@ -1,8 +1,7 @@
 package dev.dada.minishop.payment;
 
 import dev.dada.minishop.exception.BusinessException;
-import dev.dada.minishop.order.Order;
-import dev.dada.minishop.order.OrderRepository;
+import dev.dada.minishop.exception.ResourceNotFoundException;
 import dev.dada.minishop.payment.dto.PaymentDto;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -49,7 +48,7 @@ public class PaymentService {
 
     @Transactional
     public Payment updatePending(String key, String transactionId, boolean success) {
-        Payment payment = paymentRepository.findByIdempotencyKey(key).orElseThrow(() -> new BusinessException("Payment Not Found"));
+        Payment payment = paymentRepository.findByIdempotencyKey(key).orElseThrow(() -> new ResourceNotFoundException("Payment Not Found"));
 
         payment.setTransactionId(transactionId);
 
@@ -68,7 +67,7 @@ public class PaymentService {
 
     @Transactional
     public Payment markUnknown(String key) {
-        Payment payment = paymentRepository.findByIdempotencyKey(key).orElseThrow(() -> new BusinessException("Payment Not Found"));
+        Payment payment = paymentRepository.findByIdempotencyKey(key).orElseThrow(() -> new ResourceNotFoundException("Payment Not Found"));
 
         payment.setStatus(PaymentStatus.UNKNOWN);
 

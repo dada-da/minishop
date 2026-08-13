@@ -5,6 +5,8 @@ import dev.dada.minishop.cart.dto.CartDto;
 import dev.dada.minishop.cart.dto.CartItemDto;
 import dev.dada.minishop.cart.dto.UpdateCartItemRequest;
 import dev.dada.minishop.exception.BusinessException;
+import dev.dada.minishop.exception.ResourceNotFoundException;
+import dev.dada.minishop.exception.UnprocessResourceException;
 import dev.dada.minishop.product.Product;
 import dev.dada.minishop.product.ProductRepository;
 import dev.dada.minishop.user.User;
@@ -61,14 +63,14 @@ public class CartService {
             product = existedCartItem.get().getProduct();
             currentQuantity = existedCartItem.get().getQuantity();
         } else {
-            product = productRepository.findById(request.productId()).orElseThrow(() -> new BusinessException("Product not found"));
+            product = productRepository.findById(request.productId()).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         }
 
 
         int newQuantity = request.quantity() + currentQuantity;
 
         if (newQuantity > product.getStockQuantity()) {
-            throw new BusinessException("Product quantity exceeds stock quantity");
+            throw new UnprocessResourceException("Product quantity exceeds stock quantity");
         }
 
         if (exists) {
@@ -91,7 +93,7 @@ public class CartService {
 
         List<CartItem> cartItems = cart.getCartItems();
 
-        CartItem existedCartItem = findCartItem(cartItems, productId).orElseThrow(() -> new BusinessException("Cart item not found"));
+        CartItem existedCartItem = findCartItem(cartItems, productId).orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
 
         if (request.quantity() <= 0) {
             cartItems.remove(existedCartItem);
@@ -100,7 +102,7 @@ public class CartService {
         }
 
         if (request.quantity() > existedCartItem.getProduct().getStockQuantity()) {
-            throw new BusinessException("Cart item quantity exceeds stock quantity");
+            throw new UnprocessResourceException("Cart item quantity exceeds stock quantity");
         }
 
         existedCartItem.setQuantity(request.quantity());
@@ -114,7 +116,7 @@ public class CartService {
 
         List<CartItem> cartItems = cart.getCartItems();
 
-        CartItem existedCartItem = findCartItem(cartItems, productId).orElseThrow(() -> new BusinessException("Cart item not found"));
+        CartItem existedCartItem = findCartItem(cartItems, productId).orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
 
         cartItems.remove(existedCartItem);
 
@@ -170,7 +172,7 @@ public class CartService {
     }
 
     private Cart findCartOrThrow(Long userId) {
-        return cartRepository.findByUserId(userId).orElseThrow(() -> new BusinessException("Can't find cart by userId"));
+        return cartRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Can't find cart by userId"));
     }
 
     private void increaseQuantity(CartItem cartItem, Integer quantity) {

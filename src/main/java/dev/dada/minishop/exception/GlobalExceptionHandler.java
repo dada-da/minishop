@@ -2,7 +2,10 @@ package dev.dada.minishop.exception;
 
 import dev.dada.minishop.common.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,9 +14,11 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.UUID;
 
@@ -24,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  * TASK MS-24: Bat tat ca exception -> tra ve ErrorResponse dong nhat.
  * - ResourceNotFoundException  -> 404
- * - BusinessException          -> 409 / 400
+ * - BusinessException          -> 409
  * - MethodArgumentNotValidException (validation) -> 400 + danh sach loi field
  * - AccessDeniedException      -> 403
  * - Exception (fallback)       -> 500
@@ -34,9 +39,46 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     // TODO MS-24: @ExceptionHandler cho tung loai
 
-    @ExceptionHandler(value = {MethodArgumentNotValidException.class, MethodArgumentTypeMismatchException.class, HttpMessageNotReadableException.class})
-    public ResponseEntity<ApiResponse<ErrorResponse>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @ExceptionHandler(value = OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleOptimisticLockingFailureException(Exception ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(value = {
+            MethodArgumentTypeMismatchException.class,
+            InvalidPaymentTokenException.class,
+            ConstraintViolationException.class,
+            InvalidOperationException.class,
+            MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleGeneralBadRequest(Exception ex, HttpServletRequest request) {
         return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleHttpMessageNotReadableException(Exception ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST, "Malformed or missing JSON request body.");
+    }
+
+    @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMethodArgumentTypeMismatchException(Exception ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST, "Argument Not Valid.");
+    }
+
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMethodArgumentNotValidException(MethodArgumentNotValidException exception, HttpServletRequest request) {
+        log.warn(exception.getMessage());
+
+        Map<String, String> fieldErrors = toErrorMap(exception.getBindingResult().getFieldErrors());
+
+        ErrorResponse errorResponse = new ErrorResponse("Argument Not Valid", request.getRequestURI(), fieldErrors);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(errorResponse));
+    }
+
+    @ExceptionHandler(value = UnprocessableEntityException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleUnprocessableEntityException(UnprocessableEntityException ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     @ExceptionHandler(value = HttpRequestMethodNotSupportedException.class)
@@ -49,13 +91,8 @@ public class GlobalExceptionHandler {
         return getResponseEntity(ex, request, HttpStatus.GATEWAY_TIMEOUT);
     }
 
-    @ExceptionHandler(value = InvalidPaymentTokenException.class)
-    public ResponseEntity<ApiResponse<ErrorResponse>> handleInvalidPaymentTokenException(InvalidPaymentTokenException ex, HttpServletRequest request) {
-        return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST);
-    }
-
     @ExceptionHandler(value = {AccessDeniedException.class})
-    public ResponseEntity<ApiResponse<ErrorResponse>> handleException(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return getResponseEntity(ex, request, HttpStatus.FORBIDDEN);
     }
 
@@ -64,14 +101,31 @@ public class GlobalExceptionHandler {
         return getResponseEntity(ex, request, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(value = {BusinessException.class})
+    @ExceptionHandler(value = NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleNoResourceFoundException(NoResourceFoundException ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = DuplicateResourceException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleBusinessArgumentException(Exception ex, HttpServletRequest request) {
         return getResponseEntity(ex, request, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(value = {
+            DataIntegrityViolationException.class
+    })
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleDataIntegrityViolationException(Exception ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.CONFLICT, "Data Is Not Valid");
     }
 
     @ExceptionHandler(value = HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
         return getResponseEntity(ex, request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    @ExceptionHandler(value = BusinessException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleBusinessException(BusinessException ex, HttpServletRequest request) {
+        return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(value = Exception.class)
@@ -80,9 +134,9 @@ public class GlobalExceptionHandler {
 
         String message = "Unknown Error ID:" + UUID.randomUUID();
 
-        log.error("{}{}{}", now.toString(), message, exception.getMessage(), exception);
+        log.error("{} - {}", message, exception.getMessage(), exception);
 
-        ErrorResponse errorResponse = new ErrorResponse(now, HttpStatus.INTERNAL_SERVER_ERROR.value(), null, message, request.getRequestURI(), null);
+        ErrorResponse errorResponse = new ErrorResponse(message, request.getRequestURI(), null);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(errorResponse));
     }
@@ -97,22 +151,30 @@ public class GlobalExceptionHandler {
                 );
     }
 
-    private ErrorResponse getErrorResponse(Exception exception, HttpServletRequest request, HttpStatus httpStatus) {
-        Instant now = Instant.now();
+    private ErrorResponse getErrorResponse(HttpServletRequest request, String message) {
+        return new ErrorResponse(message, request.getRequestURI(), null);
+    }
 
-        Map<String, String> fieldErrors = null;
-
-        if (exception instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
-            fieldErrors = toErrorMap(methodArgumentNotValidException.getBindingResult().getFieldErrors());
+    private void logError(Exception exception, HttpStatus httpStatus) {
+        if (httpStatus.is5xxServerError()) {
+            log.error(exception.getMessage(), exception);
+        } else {
+            log.warn(exception.getMessage());
         }
+    }
 
-        return new ErrorResponse(now, httpStatus.value(), null, exception.getMessage(), request.getRequestURI(), fieldErrors);
+    private ResponseEntity<ApiResponse<ErrorResponse>> getResponseEntity(Exception exception, HttpServletRequest request, HttpStatus httpStatus, String customMessage) {
+        logError(exception, httpStatus);
+
+        ErrorResponse errorResponse = getErrorResponse(request, customMessage);
+
+        return ResponseEntity.status(httpStatus).body(ApiResponse.error(errorResponse));
     }
 
     private ResponseEntity<ApiResponse<ErrorResponse>> getResponseEntity(Exception exception, HttpServletRequest request, HttpStatus httpStatus) {
-        log.error(exception.getMessage(), exception);
+        logError(exception, httpStatus);
 
-        ErrorResponse errorResponse = getErrorResponse(exception, request, httpStatus);
+        ErrorResponse errorResponse = getErrorResponse(request, exception.getMessage());
 
         return ResponseEntity.status(httpStatus).body(ApiResponse.error(errorResponse));
     }

@@ -5,6 +5,8 @@ import dev.dada.minishop.cart.CartItem;
 import dev.dada.minishop.cart.CartRepository;
 import dev.dada.minishop.common.PageResponse;
 import dev.dada.minishop.exception.BusinessException;
+import dev.dada.minishop.exception.ResourceNotFoundException;
+import dev.dada.minishop.exception.UnprocessResourceException;
 import dev.dada.minishop.order.dto.ChangeStatusRequest;
 import dev.dada.minishop.order.dto.OrderDto;
 import dev.dada.minishop.order.dto.OrderItemDto;
@@ -50,7 +52,7 @@ public class OrderService {
     @Transactional
     public OrderDto placeOrder(Long userId) {
         // TODO MS-18, MS-21
-        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new BusinessException("Can not find cart with user"));
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Can not find cart with user"));
 
         if (cart.getCartItems().isEmpty()) {
             throw new BusinessException("Cart is empty");
@@ -107,24 +109,24 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderDto getOrderById(Long orderId, Long userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         return toResponseDto(order);
     }
 
     @Transactional(readOnly = true)
     public Order getOrderEntityById(Long orderId, Long userId) {
-        return orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+        return orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
     @Transactional
     public OrderDto changeOrderStatus(Long orderId, ChangeStatusRequest request) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new BusinessException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         OrderStatus status = order.getOrderStatus();
 
         if (!status.canTransitionTo(request.status())) {
-            throw new BusinessException("Order status cannot transition to " + request.status());
+            throw new UnprocessResourceException("Order status cannot transition to " + request.status());
         }
 
         order.setOrderStatus(request.status());
@@ -138,7 +140,7 @@ public class OrderService {
 
     @Transactional
     public OrderDto cancelOrder(Long orderId, Long userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         OrderStatus status = order.getOrderStatus();
 
@@ -155,7 +157,7 @@ public class OrderService {
 
     @Transactional
     public OrderDto markPaid(Long orderId, Long userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new BusinessException("Order not found"));
+        Order order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         OrderStatus status = order.getOrderStatus();
 
@@ -182,7 +184,7 @@ public class OrderService {
         Product product = cartItem.getProduct();
 
         if (product.getStockQuantity() < cartItem.getQuantity()) {
-            throw new BusinessException("Product stock quantity exceeded");
+            throw new UnprocessResourceException("Product stock quantity exceeded");
         } else {
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
         }
@@ -201,7 +203,7 @@ public class OrderService {
     private void restoreStock(Order order) {
         List<OrderItem> orderItems = order.getOrderItems();
         for (OrderItem orderItem : orderItems) {
-            Product product = productRepository.findById(orderItem.getProductId()).orElseThrow(() -> new BusinessException("Product not found"));
+            Product product = productRepository.findById(orderItem.getProductId()).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
         }

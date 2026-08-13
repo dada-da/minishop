@@ -1,5 +1,6 @@
 package dev.dada.minishop.security;
 
+import dev.dada.minishop.user.CustomUserDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -15,7 +16,7 @@ import java.util.function.Function;
 /**
  * TASK MS-12: Sinh & xac thuc JWT.
  * - generateAccessToken(user) / generateRefreshToken(user)
- * - extractUsername(token), isTokenValid(token, userDetails)
+ * - extractUsername(token)
  * - doc secret + expiration tu app.jwt.* (application.yml)
  */
 @Service
@@ -43,6 +44,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(username)
                 .claim("role", role)
+                .claim("type", "access")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -55,6 +57,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(username)
+                .claim("type", "refresh")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -65,21 +68,12 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
         return claimsResolver.apply(claims);
-    }
-
-    public boolean isTokenValid(String token, String username) {
-        try {
-            final String tokenUsername = extractUsername(token);
-            return (tokenUsername.equals(username));
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
     }
 }

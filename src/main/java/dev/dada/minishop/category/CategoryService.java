@@ -2,7 +2,7 @@ package dev.dada.minishop.category;
 
 import dev.dada.minishop.category.dto.CategoryDto;
 import dev.dada.minishop.category.dto.CategoryRequest;
-import dev.dada.minishop.exception.BusinessException;
+import dev.dada.minishop.exception.DuplicateResourceException;
 import dev.dada.minishop.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,7 @@ public class CategoryService {
 
     public CategoryDto create(CategoryRequest request) {
         if (categoryRepository.existsBySlug(request.getSlug())) {
-            throw new BusinessException("Category slug already exists");
+            throw new DuplicateResourceException("Category slug already exists");
         }
 
         Category category = new Category();
@@ -44,7 +44,7 @@ public class CategoryService {
         }
 
         if (categoryRepository.existsBySlug(request.getSlug())) {
-            throw new BusinessException("Category slug already exists");
+            throw new DuplicateResourceException("Category slug already exists");
         }
 
         category.get().setName(request.getName());
