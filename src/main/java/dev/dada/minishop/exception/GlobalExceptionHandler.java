@@ -20,20 +20,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-
-import java.time.Instant;
-import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * TASK MS-24: Bat tat ca exception -> tra ve ErrorResponse dong nhat.
- * - ResourceNotFoundException  -> 404
- * - BusinessException          -> 409
- * - MethodArgumentNotValidException (validation) -> 400 + danh sach loi field
- * - AccessDeniedException      -> 403
- * - Exception (fallback)       -> 500
- */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -45,7 +37,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = {
-            MethodArgumentTypeMismatchException.class,
             InvalidPaymentTokenException.class,
             ConstraintViolationException.class,
             InvalidOperationException.class,
@@ -62,12 +53,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleMethodArgumentTypeMismatchException(Exception ex, HttpServletRequest request) {
-        return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST, "Argument Not Valid.");
+        return getResponseEntity(ex, request, HttpStatus.BAD_REQUEST, "Argument Mismatch.");
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleMethodArgumentNotValidException(MethodArgumentNotValidException exception, HttpServletRequest request) {
-        log.warn(exception.getMessage());
+        log.warn("{} - {} - {}", HttpStatus.BAD_REQUEST, request.getRequestURI(), exception.getMessage());
 
         Map<String, String> fieldErrors = toErrorMap(exception.getBindingResult().getFieldErrors());
 
@@ -107,7 +98,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse<ErrorResponse>> handleBusinessArgumentException(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleDuplicateResourceException(Exception ex, HttpServletRequest request) {
         return getResponseEntity(ex, request, HttpStatus.CONFLICT);
     }
 
@@ -130,8 +121,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleUnwantedException(Exception exception, HttpServletRequest request) {
-        Instant now = Instant.now();
-
         String message = "Unknown Error ID:" + UUID.randomUUID();
 
         log.error("{} - {}", message, exception.getMessage(), exception);
@@ -159,7 +148,7 @@ public class GlobalExceptionHandler {
         if (httpStatus.is5xxServerError()) {
             log.error(exception.getMessage(), exception);
         } else {
-            log.warn(exception.getMessage());
+            log.warn("{} - {}", httpStatus, exception.getMessage());
         }
     }
 

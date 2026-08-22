@@ -6,7 +6,7 @@ import dev.dada.minishop.cart.dto.CartItemDto;
 import dev.dada.minishop.cart.dto.UpdateCartItemRequest;
 import dev.dada.minishop.exception.BusinessException;
 import dev.dada.minishop.exception.ResourceNotFoundException;
-import dev.dada.minishop.exception.UnprocessResourceException;
+import dev.dada.minishop.exception.UnprocessableEntityException;
 import dev.dada.minishop.product.Product;
 import dev.dada.minishop.product.ProductRepository;
 import dev.dada.minishop.user.User;
@@ -70,7 +70,7 @@ public class CartService {
         int newQuantity = request.quantity() + currentQuantity;
 
         if (newQuantity > product.getStockQuantity()) {
-            throw new UnprocessResourceException("Product quantity exceeds stock quantity");
+            throw new UnprocessableEntityException("Product quantity exceeds stock quantity");
         }
 
         if (exists) {
@@ -102,7 +102,7 @@ public class CartService {
         }
 
         if (request.quantity() > existedCartItem.getProduct().getStockQuantity()) {
-            throw new UnprocessResourceException("Cart item quantity exceeds stock quantity");
+            throw new UnprocessableEntityException("Cart item quantity exceeds stock quantity");
         }
 
         existedCartItem.setQuantity(request.quantity());

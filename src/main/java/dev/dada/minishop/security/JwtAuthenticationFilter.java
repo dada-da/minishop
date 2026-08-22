@@ -1,6 +1,7 @@
 package dev.dada.minishop.security;
 
 import dev.dada.minishop.user.CustomUserDetails;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -10,9 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -21,7 +21,6 @@ import java.io.IOException;
  * TASK MS-12: Doc header Authorization: Bearer <token>,
  * validate va set Authentication vao SecurityContext.
  */
-@Component
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
@@ -49,8 +48,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             token = header.substring(7);
-            username = jwtService.extractUsername(token);
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            Claims claims = jwtService.getClaim(token);
+
+            String tokenType = claims.get("type", String.class);
+
+            username = claims.getSubject();
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null && "access".equals(tokenType)) {
                 CustomUserDetails userDetails = this.userService.loadUserByUsername(username);
 
                 AccountStatusUserDetailsChecker accountStatusUserDetailsChecker = new AccountStatusUserDetailsChecker();
@@ -62,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException e) {
+        } catch (JwtException | IllegalArgumentException | AuthenticationException e) {
             log.warn("JWT not valid: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }

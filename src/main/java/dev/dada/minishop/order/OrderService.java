@@ -6,7 +6,7 @@ import dev.dada.minishop.cart.CartRepository;
 import dev.dada.minishop.common.PageResponse;
 import dev.dada.minishop.exception.BusinessException;
 import dev.dada.minishop.exception.ResourceNotFoundException;
-import dev.dada.minishop.exception.UnprocessResourceException;
+import dev.dada.minishop.exception.UnprocessableEntityException;
 import dev.dada.minishop.order.dto.ChangeStatusRequest;
 import dev.dada.minishop.order.dto.OrderDto;
 import dev.dada.minishop.order.dto.OrderItemDto;
@@ -126,7 +126,7 @@ public class OrderService {
         OrderStatus status = order.getOrderStatus();
 
         if (!status.canTransitionTo(request.status())) {
-            throw new UnprocessResourceException("Order status cannot transition to " + request.status());
+            throw new UnprocessableEntityException("Order status cannot transition to " + request.status());
         }
 
         order.setOrderStatus(request.status());
@@ -184,7 +184,7 @@ public class OrderService {
         Product product = cartItem.getProduct();
 
         if (product.getStockQuantity() < cartItem.getQuantity()) {
-            throw new UnprocessResourceException("Product stock quantity exceeded");
+            throw new UnprocessableEntityException("Product stock quantity exceeded");
         } else {
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
         }
